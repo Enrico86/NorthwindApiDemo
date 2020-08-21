@@ -15,6 +15,11 @@ namespace NorthwindApiDemo.Services
             _context = context;
         }
 
+        public bool CustomerExists(string customerId)
+        {
+            return _context.Customers.Any(c => c.CustomerId == customerId);
+        }
+
         public Customers GetCustomer(string customerId, bool includeOrders)
         {
             if (includeOrders)

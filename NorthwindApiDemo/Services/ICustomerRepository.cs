@@ -15,5 +15,6 @@ namespace NorthwindApiDemo.Services
         //El motivo de que customerId es un string y no un int es porqué en la base de datos es de este tipo.
         IEnumerable<Orders> GetOrders(string customerId);
         Orders GetOrder(string customerId, int orderId);
+        bool CustomerExists(string customerId);
     }
 }

@@ -6,39 +6,71 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using NorthwindApiDemo.Models;
-
+using NorthwindApiDemo.Services;
 
 namespace NorthwindApiDemo.Controllers
 {
     [Route("api/customers")]
     public class OrdersController : Controller
     {
-        [HttpGet("{customerId}/orders", Name ="GetOrders")]
-        public IActionResult GetOrders (int customerId)
+        private ICustomerRepository _customerRepository;
+        public OrdersController(ICustomerRepository customerRepository)
         {
-            var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
-            if (customer==null)
+            _customerRepository = customerRepository;
+        }
+
+
+        [HttpGet("{customerId}/orders", Name ="GetOrders")]
+        public IActionResult GetOrders (string customerId)
+        {
+            var orders = _customerRepository.GetOrders(customerId);
+            if (!_customerRepository.CustomerExists(customerId))
             {
-                return NotFound($"Cliente con id {customerId} no encontrado");
+                return NotFound("Cliente no encontrado");
             }
-            return Ok(customer.Orders);
+            if (orders==null)
+            {
+                return NotFound("No hay pedidos para este cliente");
+            }
+            var results = AutoMapper.Mapper.Map<IEnumerable<OrdersDTO>>(orders);
+            return Ok(results);
+
+            //var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
+            //if (customer==null)
+            //{
+            //    return NotFound($"Cliente con id {customerId} no encontrado");
+            //}
+            //return Ok(customer.Orders);
         }
 
         [HttpGet("{customerId}/orders/{orderId}", Name ="GetOrder")]
         //Asigno un nombre a esta ruta, para poderlo utilizar en otros métodos en que lo necesite
-        public IActionResult GetOrder (int customerId, int orderId)
+        public IActionResult GetOrder (string customerId, int orderId)
         {
-            var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
-            if (customer == null)
+            if (!_customerRepository.CustomerExists(customerId))
             {
-                return NotFound($"Cliente con id {customerId} no encontrado");
+                return NotFound("Cliente no encontrado en la bbdd");
             }
-            var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
-            if (order == null)
+            var order = _customerRepository.GetOrder(customerId, orderId);
+            if (order==null)
             {
-                return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+                return NotFound($"No existe el pedido {orderId} del cliente {customerId}");
             }
-            return Ok(order);
+            var result = AutoMapper.Mapper.Map<OrdersDTO>(order);
+            return Ok(result);
+
+
+            //var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
+            //if (customer == null)
+            //{
+            //    return NotFound($"Cliente con id {customerId} no encontrado");
+            //}
+            //var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            //if (order == null)
+            //{
+            //    return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+            //}
+            //return Ok(order);
         }
 
         [HttpPost("{customerId}/orders")]

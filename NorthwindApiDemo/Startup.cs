@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using NorthwindApiDemo.EFModels;
+using NorthwindApiDemo.Models;
 using Microsoft.EntityFrameworkCore;
 using NorthwindApiDemo.Services;
 
@@ -45,7 +46,15 @@ namespace NorthwindApiDemo
 
             app.UseStatusCodePages();
 
+            AutoMapper.Mapper.Initialize(config =>
+            {
+                config.CreateMap<Customers, CustomerWithoutOrders>();
+                config.CreateMap<Customers, CustomerDTO>();
+                config.CreateMap<Orders, OrdersDTO>();
+            });
             app.UseMvc();
+
+
 
             //app.UseMvc(config => 
             //{
