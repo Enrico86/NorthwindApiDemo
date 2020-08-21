@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
+using NorthwindApiDemo.EFModels;
+using Microsoft.EntityFrameworkCore;
+using NorthwindApiDemo.Services;
 
 namespace NorthwindApiDemo
 {
@@ -16,7 +20,13 @@ namespace NorthwindApiDemo
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(option => option.EnableEndpointRouting = false);
+            services.AddMvc(option => option.EnableEndpointRouting = false).AddNewtonsoftJson();
+            services.AddDbContext<NorthwindContext>(options=>
+            {
+                options.UseSqlServer("Server=.\\SQLEXPRESS;Database=Northwind;Trusted_Connection=True;");
+            });
+
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
 
         }
 
