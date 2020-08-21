@@ -1,4 +1,5 @@
 ﻿using NorthwindApiDemo.EFModels;
+using NorthwindApiDemo.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,5 +17,8 @@ namespace NorthwindApiDemo.Services
         IEnumerable<Orders> GetOrders(string customerId);
         Orders GetOrder(string customerId, int orderId);
         bool CustomerExists(string customerId);
+
+        void AddOrder(string customerId, Orders order);
+        bool Save();
     }
 }

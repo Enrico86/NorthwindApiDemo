@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using NorthwindApiDemo.Models;
 using NorthwindApiDemo.Services;
+using AutoMapper;
+using NorthwindApiDemo.EFModels;
 
 namespace NorthwindApiDemo.Controllers
 {
@@ -32,7 +34,7 @@ namespace NorthwindApiDemo.Controllers
             {
                 return NotFound("No hay pedidos para este cliente");
             }
-            var results = AutoMapper.Mapper.Map<IEnumerable<OrdersDTO>>(orders);
+            var results = Mapper.Map<IEnumerable<OrdersDTO>>(orders);
             return Ok(results);
 
             //var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
@@ -56,7 +58,7 @@ namespace NorthwindApiDemo.Controllers
             {
                 return NotFound($"No existe el pedido {orderId} del cliente {customerId}");
             }
-            var result = AutoMapper.Mapper.Map<OrdersDTO>(order);
+            var result = Mapper.Map<OrdersDTO>(order);
             return Ok(result);
 
 
@@ -74,7 +76,7 @@ namespace NorthwindApiDemo.Controllers
         }
 
         [HttpPost("{customerId}/orders")]
-        public IActionResult CreateOrder (int customerId, [FromBody]OrdersForCreationDTO order)
+        public IActionResult CreateOrder (string customerId, [FromBody]OrdersForCreationDTO order)
             //Hay que especificar que el parametro order será introducio por el usuario en el Body de la página web de 
             //donde se está invocando este método (api/customers/3/orders por ejemplo si se trata del cliente con id 3)
         {
@@ -88,42 +90,54 @@ namespace NorthwindApiDemo.Controllers
                 return BadRequest(ModelState);
             }
 
-
-            var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
-            if (customer == null)
+            if (!_customerRepository.CustomerExists(customerId))
             {
-                return NotFound($"Cliente con id {customerId} no encontrado");
+                return NotFound($"Cliente con id {customerId} no encontrado en la bbdd");
             }
-            var maxOrderId = Repository.Instance.Customers.SelectMany(c=>c.Orders).Max(o=>o.OrderId);
-            //Capturo en una variable el id max entre todos los pedidos de todos los clientes
 
-            var finalOrder = new OrdersDTO()
+
+            //var maxOrderId = Repository.Instance.Customers.SelectMany(c=>c.Orders).Max(o=>o.OrderId);
+            ////Capturo en una variable el id max entre todos los pedidos de todos los clientes
+
+            var finalOrder = Mapper.Map<Orders>(order);
+            finalOrder.OrderDate = DateTime.Now;
+            _customerRepository.AddOrder(customerId, finalOrder);
+            if (!_customerRepository.Save())
             {
-                OrderId = maxOrderId++,
-                CustomerId = order.CustomerId,
-                EmployeeId=order.EmployeeId,
-                Freight=order.Freight,
-                OrderDate=DateTime.Today,
-                RequiredDate=order.RequiredDate,
-                ShipAddress=order.ShipAddress,
-                ShipCity=order.ShipCity,
-                ShipCountry=order.ShipCountry,
-                ShipName=order.ShipName,
-                ShippedaDate=order.ShippedaDate,
-                ShipPostalCode=order.ShipPostalCode,
-                ShipRegion=order.ShipRegion,
-                ShipVia=order.ShipVia
-                //El usuario digamos creará un OrdersForCretionDTO (por el que no tiene que definir el OrderId ni el OrderDate por ejemplo
-            };
+                return StatusCode(500, "Por favor, revise los datos introducidos");
+            }
 
-            customer.Orders.Add(finalOrder);
-            return CreatedAtRoute("GetOrder", new { customerId = customerId, orderId = finalOrder.OrderId },finalOrder);
-            //Como acción final vamos a crear una nueva ruta para que el navegador nos dirija hacia ella: necesita tres 
-            //parametros esta ruta, el primero es el nombre de la ruta (que hemos llemado GetOrder, hubiera sido lo mismo 
-            //volver a escribir "{customerId}/orders/{orderId}"), el segundo son los valores de la ruta ya que esta ruta 
-            //necesita de dos variables para que podamos navegar hacia ella (el customerId y orderId) por lo que creamos 
-            //una nueva instancia de un objeto anonimo con estos dos valores, cogiendolos del pedido que acabamos de crear.
-            //Y como tercer parametro le pasamos el objeto del que queremos que coja los datos a mostrar en el navegador.
+            var createdOrder = Mapper.Map<OrdersDTO>(finalOrder);
+            return CreatedAtRoute("GetOrder", new { customerId = customerId, orderId = createdOrder.OrderId }, createdOrder);
+
+
+            //    new OrdersDTO()
+            //{
+            //    OrderId = maxOrderId++,
+            //    CustomerId = order.CustomerId,
+            //    EmployeeId=order.EmployeeId,
+            //    Freight=order.Freight,
+            //    OrderDate=DateTime.Today,
+            //    RequiredDate=order.RequiredDate,
+            //    ShipAddress=order.ShipAddress,
+            //    ShipCity=order.ShipCity,
+            //    ShipCountry=order.ShipCountry,
+            //    ShipName=order.ShipName,
+            //    ShippedaDate=order.ShippedaDate,
+            //    ShipPostalCode=order.ShipPostalCode,
+            //    ShipRegion=order.ShipRegion,
+            //    ShipVia=order.ShipVia
+            //    //El usuario digamos creará un OrdersForCretionDTO (por el que no tiene que definir el OrderId ni el OrderDate por ejemplo
+            //};
+
+            //customer.Orders.Add(finalOrder);
+            //return CreatedAtRoute("GetOrder", new { customerId = customerId, orderId = finalOrder.OrderId },finalOrder);
+            ////Como acción final vamos a crear una nueva ruta para que el navegador nos dirija hacia ella: necesita tres 
+            ////parametros esta ruta, el primero es el nombre de la ruta (que hemos llemado GetOrder, hubiera sido lo mismo 
+            ////volver a escribir "{customerId}/orders/{orderId}"), el segundo son los valores de la ruta ya que esta ruta 
+            ////necesita de dos variables para que podamos navegar hacia ella (el customerId y orderId) por lo que creamos 
+            ////una nueva instancia de un objeto anonimo con estos dos valores, cogiendolos del pedido que acabamos de crear.
+            ////Y como tercer parametro le pasamos el objeto del que queremos que coja los datos a mostrar en el navegador.
         }
 
         [HttpPut("{customerId}/orders/{orderId}")]

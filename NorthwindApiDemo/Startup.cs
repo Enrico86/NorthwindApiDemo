@@ -51,6 +51,7 @@ namespace NorthwindApiDemo
                 config.CreateMap<Customers, CustomerWithoutOrders>();
                 config.CreateMap<Customers, CustomerDTO>();
                 config.CreateMap<Orders, OrdersDTO>();
+                config.CreateMap<OrdersForCreationDTO, Orders>();
             });
             app.UseMvc();
 

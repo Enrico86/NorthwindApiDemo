@@ -43,5 +43,15 @@ namespace NorthwindApiDemo.Services
         {
             return _context.Orders.Where(o => o.CustomerId == customerId).ToList();
         }
+
+        public void AddOrder(string customerId, Orders order)
+        {
+            var customer = GetCustomer(customerId, false);
+            customer.Orders.Add(order);
+        }
+        public bool Save()
+        {
+            return _context.SaveChanges()>=0; 
+        }
     }
 }
