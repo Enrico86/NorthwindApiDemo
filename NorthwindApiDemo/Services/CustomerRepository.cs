@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace NorthwindApiDemo.Services
 {
     public class CustomerRepository : ICustomerRepository
@@ -52,6 +53,12 @@ namespace NorthwindApiDemo.Services
         public bool Save()
         {
             return _context.SaveChanges()>=0; 
+        }
+
+        public void DeleteOrder(string customerId, int orderId)
+        {
+            var order = GetOrder(customerId,orderId);
+            _context.Remove(order);
         }
     }
 }

@@ -12,6 +12,7 @@ using NorthwindApiDemo.EFModels;
 using NorthwindApiDemo.Models;
 using Microsoft.EntityFrameworkCore;
 using NorthwindApiDemo.Services;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace NorthwindApiDemo
 {
@@ -52,6 +53,7 @@ namespace NorthwindApiDemo
                 config.CreateMap<Customers, CustomerDTO>();
                 config.CreateMap<Orders, OrdersDTO>();
                 config.CreateMap<OrdersForCreationDTO, Orders>();
+                config.CreateMap<Orders, OrdersForCreationDTO>();
             });
             app.UseMvc();
 

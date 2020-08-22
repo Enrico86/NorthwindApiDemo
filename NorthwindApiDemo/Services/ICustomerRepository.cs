@@ -20,5 +20,7 @@ namespace NorthwindApiDemo.Services
 
         void AddOrder(string customerId, Orders order);
         bool Save();
+
+        void DeleteOrder (string customerId, int orderId);
     }
 }

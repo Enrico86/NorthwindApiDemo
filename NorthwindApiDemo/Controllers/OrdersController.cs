@@ -141,9 +141,9 @@ namespace NorthwindApiDemo.Controllers
         }
 
         [HttpPut("{customerId}/orders/{orderId}")]
-        public IActionResult UpdateOrder (int customerId, int orderId, [FromBody] OrdersForCreationDTO orderToUpdate)
+        public IActionResult UpdateOrder (string customerId, int orderId, [FromBody] OrdersForCreationDTO customerUpdatedOrder)
         {
-            if (orderToUpdate == null)
+            if (customerUpdatedOrder == null)
             {
                 return BadRequest("Petición incorrecta: el pedido está incompleto");
             }
@@ -153,37 +153,60 @@ namespace NorthwindApiDemo.Controllers
                 return BadRequest(ModelState);
             }
 
-            var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
-            if (customer == null)
+            if (!_customerRepository.CustomerExists(customerId))
             {
-                return NotFound($"Cliente con id {customerId} no encontrado");
+                return NotFound($"Cliente con id {customerId} no encontrado en la bbdd");
             }
 
-            var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
-            if (order == null)
+            var existingOrder = _customerRepository.GetOrder(customerId, orderId);
+            if (existingOrder==null)
             {
-                return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+                return NotFound($"Pedido con id {orderId} no encontrado en la bbdd");
             }
 
-            order.CustomerId = orderToUpdate.CustomerId;
-            order.EmployeeId = orderToUpdate.EmployeeId;
-            order.Freight = orderToUpdate.Freight;
-            order.RequiredDate = orderToUpdate.RequiredDate;
-            order.ShipAddress = orderToUpdate.ShipAddress;
-            order.ShipCity = orderToUpdate.ShipCity;
-            order.ShipCountry = orderToUpdate.ShipCountry;
-            order.ShipName = orderToUpdate.ShipName;
-            order.ShippedaDate = orderToUpdate.ShippedaDate;
-            order.ShipPostalCode = orderToUpdate.ShipPostalCode;
-            order.ShipRegion = orderToUpdate.ShipRegion;
-            order.ShipVia = orderToUpdate.ShipVia;
-            //El usuario digamos creará un OrdersForCretionDTO (por el que no tiene que definir el OrderId ni el OrderDate por ejemplo
+            Mapper.Map(customerUpdatedOrder, existingOrder);
+           
+            if (!_customerRepository.Save())
+            {
+                return StatusCode(500, "Por favor, revise los datos introducidos");
+            }
 
-            return NoContent();
+            var updatedOrder = Mapper.Map<OrdersDTO>(existingOrder);
+            return CreatedAtRoute("GetOrder", new { customerId = customerId, orderId = updatedOrder.OrderId }, updatedOrder);
+
+
+
+            //var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
+            //if (customer == null)
+            //{
+            //    return NotFound($"Cliente con id {customerId} no encontrado");
+            //}
+
+            //var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            //if (order == null)
+            //{
+            //    return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+            //}
+
+            //order.CustomerId = orderToUpdate.CustomerId;
+            //order.EmployeeId = orderToUpdate.EmployeeId;
+            //order.Freight = orderToUpdate.Freight;
+            //order.RequiredDate = orderToUpdate.RequiredDate;
+            //order.ShipAddress = orderToUpdate.ShipAddress;
+            //order.ShipCity = orderToUpdate.ShipCity;
+            //order.ShipCountry = orderToUpdate.ShipCountry;
+            //order.ShipName = orderToUpdate.ShipName;
+            //order.ShippedaDate = orderToUpdate.ShippedaDate;
+            //order.ShipPostalCode = orderToUpdate.ShipPostalCode;
+            //order.ShipRegion = orderToUpdate.ShipRegion;
+            //order.ShipVia = orderToUpdate.ShipVia;
+            ////El usuario digamos creará un OrdersForCretionDTO (por el que no tiene que definir el OrderId ni el OrderDate por ejemplo
+
+            //return NoContent();
         }
 
         [HttpPatch("{customerId}/orders/{orderId}")]
-        public IActionResult UpdateOrder (int customerId, int orderId, [FromBody] JsonPatchDocument<OrdersForCreationDTO> patchOrder)
+        public IActionResult UpdateOrder (string customerId, int orderId, [FromBody] JsonPatchDocument<OrdersForCreationDTO> patchOrder)
         {
             if (patchOrder == null)
             {
@@ -195,71 +218,109 @@ namespace NorthwindApiDemo.Controllers
                 return BadRequest(ModelState);
             }
 
-            var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
-            if (customer == null)
+            if (!_customerRepository.CustomerExists(customerId))
             {
-                return NotFound($"Cliente con id {customerId} no encontrado");
+                return NotFound($"Cliente con id {customerId} no encontrado en la bbdd");
             }
 
-            var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
-            if (order == null)
+            //var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
+            //if (customer == null)
+            //{
+            //    return NotFound($"Cliente con id {customerId} no encontrado");
+            //}
+
+            var existingOrder = _customerRepository.GetOrder(customerId, orderId);
+            if (existingOrder == null)
             {
-                return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+                return NotFound($"Pedido con id {orderId} no encontrado en la bbdd");
             }
 
-            var orderToUpdate = new OrdersForCreationDTO()
+            //var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            //if (order == null)
+            //{
+            //    return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+            //}
+
+            var finalOrder = Mapper.Map<OrdersForCreationDTO>(existingOrder);
+
+            //var orderToUpdate = new OrdersForCreationDTO()
+            //{
+            //    CustomerId = order.CustomerId,
+            //    EmployeeId = order.EmployeeId,
+            //    Freight = order.Freight,
+            //    RequiredDate = order.RequiredDate,
+            //    ShipAddress = order.ShipAddress,
+            //    ShipCity = order.ShipCity,
+            //    ShipCountry = order.ShipCountry,
+            //    ShipName = order.ShipName,
+            //    ShippedaDate = order.ShippedaDate,
+            //    ShipPostalCode = order.ShipPostalCode,
+            //    ShipRegion = order.ShipRegion,
+            //    ShipVia = order.ShipVia,
+            //};
+
+            patchOrder.ApplyTo(finalOrder, ModelState);
+            TryValidateModel(finalOrder);
+            if (!ModelState.IsValid)
             {
-                CustomerId = order.CustomerId,
-                EmployeeId = order.EmployeeId,
-                Freight = order.Freight,
-                RequiredDate = order.RequiredDate,
-                ShipAddress = order.ShipAddress,
-                ShipCity = order.ShipCity,
-                ShipCountry = order.ShipCountry,
-                ShipName = order.ShipName,
-                ShippedaDate = order.ShippedaDate,
-                ShipPostalCode = order.ShipPostalCode,
-                ShipRegion = order.ShipRegion,
-                ShipVia = order.ShipVia,
-            };
+                return BadRequest();
+            }
 
-            patchOrder.ApplyTo(orderToUpdate);
+            Mapper.Map(finalOrder, existingOrder);
 
-
-            order.CustomerId = orderToUpdate.CustomerId;
-            order.EmployeeId = orderToUpdate.EmployeeId;
-            order.Freight = orderToUpdate.Freight;
-            order.RequiredDate = orderToUpdate.RequiredDate;
-            order.ShipAddress = orderToUpdate.ShipAddress;
-            order.ShipCity = orderToUpdate.ShipCity;
-            order.ShipCountry = orderToUpdate.ShipCountry;
-            order.ShipName = orderToUpdate.ShipName;
-            order.ShippedaDate = orderToUpdate.ShippedaDate;
-            order.ShipPostalCode = orderToUpdate.ShipPostalCode;
-            order.ShipRegion = orderToUpdate.ShipRegion;
-            order.ShipVia = orderToUpdate.ShipVia;
+            //order.CustomerId = orderToUpdate.CustomerId;
+            //order.EmployeeId = orderToUpdate.EmployeeId;
+            //order.Freight = orderToUpdate.Freight;
+            //order.RequiredDate = orderToUpdate.RequiredDate;
+            //order.ShipAddress = orderToUpdate.ShipAddress;
+            //order.ShipCity = orderToUpdate.ShipCity;
+            //order.ShipCountry = orderToUpdate.ShipCountry;
+            //order.ShipName = orderToUpdate.ShipName;
+            //order.ShippedaDate = orderToUpdate.ShippedaDate;
+            //order.ShipPostalCode = orderToUpdate.ShipPostalCode;
+            //order.ShipRegion = orderToUpdate.ShipRegion;
+            //order.ShipVia = orderToUpdate.ShipVia;
+            if (!_customerRepository.Save())
+            {
+                return StatusCode(500, "Por favor, revise los datos introducidos");
+            }
 
             return NoContent();
         }
 
         [HttpDelete("{customerId}/orders/{orderId}")]
-        public IActionResult DeleteOrder (int customerId, int orderId)
+        public IActionResult DeleteOrder (string customerId, int orderId)
         {
-            var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
-            if (customer == null)
+            if (!_customerRepository.CustomerExists(customerId))
             {
-                return NotFound($"Cliente con id {customerId} no encontrado");
+                return NotFound($"Cliente con id {customerId} no encontrado en la bbdd");
             }
 
-            var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
-            if (order == null)
+            //var customer = Repository.Instance.Customers.FirstOrDefault(s => s.ID == customerId);
+            //if (customer == null)
+            //{
+            //    return NotFound($"Cliente con id {customerId} no encontrado");
+            //}
+
+            var existingOrder = _customerRepository.GetOrder(customerId, orderId);
+            if (existingOrder == null)
             {
-                return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+                return NotFound($"Pedido con id {orderId} no encontrado en la bbdd");
             }
 
-            customer.Orders.Remove(order);
+            //var order = customer.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            //if (order == null)
+            //{
+            //    return NotFound($"Pedido {orderId} no encontrado para el cliente {customer.ContactName}");
+            //}
+
+            _customerRepository.DeleteOrder(customerId,orderId);
+
+            if (!_customerRepository.Save())
+            {
+                return StatusCode(500, "Por favor, revise los datos introducidos");
+            }
             return Ok("Registro eliminado correctamente");
         }
-
     }
 }
